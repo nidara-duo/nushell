@@ -14,7 +14,7 @@ let ver = (version)
 let startup_time = $"(ansi $highlight1)(ansi attr_bold)Startup Time: (ansi reset)(ansi $foreground)($nu.startup-time)(ansi reset)"
 
 let banner_msg = match $short {
-    true => $"($startup_time)(char eol)"
+    true => $"($startup_time)"
 
     false => $"(ansi $highlight1)     __  ,(ansi reset)
 (ansi $highlight1) .--\(\)°'.' (ansi reset)(ansi $foreground)Welcome to (ansi $highlight1)Nushell(ansi reset)(ansi $foreground),(ansi reset)
