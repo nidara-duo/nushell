@@ -1,238 +1,109 @@
 # Nushell <!-- omit in toc -->
-[![Crates.io](https://img.shields.io/crates/v/nu.svg)](https://crates.io/crates/nu)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/nushell/nushell/ci.yml?branch=main)](https://github.com/nushell/nushell/actions)
-[![Nightly Build](https://github.com/nushell/nushell/actions/workflows/nightly-build.yml/badge.svg)](https://github.com/nushell/nushell/actions/workflows/nightly-build.yml)
-[![Discord](https://img.shields.io/discord/601130461678272522.svg?logo=discord)](https://discord.gg/NtAbbGn)
-[![The Changelog #363](https://img.shields.io/badge/The%20Changelog-%23363-61c192.svg)](https://changelog.com/podcast/363)
-[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/nushell/nushell)](https://github.com/nushell/nushell/graphs/commit-activity)
-[![GitHub contributors](https://img.shields.io/github/contributors/nushell/nushell)](https://github.com/nushell/nushell/graphs/contributors)
 
-A new type of shell.
+> A personal fork of Nushell, tuned for my own workflow.
 
-![Example of nushell](assets/nushell-autocomplete6.gif "Example of nushell")
+This repository is a working fork of [Nushell](https://github.com/nushell/nushell). It is based on upstream Nushell, but it is being adapted for my own daily environment, configuration style, and helper commands.
 
-## Table of Contents <!-- omit in toc -->
+The goal of this fork is simple:
 
-- [Status](#status)
-- [Learning About Nu](#learning-about-nu)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Philosophy](#philosophy)
-  - [Pipelines](#pipelines)
-  - [Opening files](#opening-files)
-  - [Plugins](#plugins)
-- [Goals](#goals)
-- [Officially Supported By](#officially-supported-by)
-- [Contributing](#contributing)
-- [License](#license)
+* keep the core Nushell experience intact
+* add small quality-of-life helpers for my shell workflow
+* make my environment reproducible and easy to maintain
+* stay close enough to upstream that pulling changes remains practical
 
-## Status
+## What this fork is for
 
-This project has reached a minimum-viable-product level of quality. Many people use it as their daily driver, but it may be unstable for some commands. Nu's design is subject to change as it matures.
+This is not a rebrand of Nushell and not a separate shell project. It is a personal working copy that I use to experiment with configuration, local conveniences, and workflow-specific additions before or alongside upstream updates.
 
-## Learning About Nu
+A few examples of the kind of changes that belong here:
 
-The [Nushell book](https://www.nushell.sh/book/) is the primary source of Nushell documentation. You can find [a full list of Nu commands in the book](https://www.nushell.sh/commands/), and we have many examples of using Nu in our [cookbook](https://www.nushell.sh/cookbook/).
+* custom helper commands in the default config
+* small workflow shortcuts for local use
+* personal defaults and startup behavior adjustments
+* experiments that may later become upstream PRs
 
-We're also active on [Discord](https://discord.gg/NtAbbGn); come and chat with us!
+## What still comes from upstream
+
+The core Nushell architecture, language, and command system still come from upstream. This fork should stay close to the original project so that merging upstream changes stays manageable.
+
+If a change is generally useful, it may later be turned into a proper upstream contribution instead of staying only in this fork.
+
+## Learning about Nushell
+
+The main Nushell documentation lives in the [Nushell book](https://www.nushell.sh/book/). It is still the best place to learn the language, built-in commands, configuration model, and pipeline behavior.
 
 ## Installation
 
-To quickly install Nu:
+For the upstream project, see the [official installation guide](https://www.nushell.sh/book/installation.html).
 
-```bash
-# Linux and macOS
-brew install nushell
-# Windows
-winget install nushell
+For this fork, the usual workflow is to build from source and run the binary from `target/release` or `target/debug`:
+
+```powershell
+cargo build --release
+.\target\release\nu.exe
 ```
-
-To use `Nu` in GitHub Action, check [setup-nu](https://github.com/marketplace/actions/setup-nu) for more detail.
-
-Detailed installation instructions can be found in the [installation chapter of the book](https://www.nushell.sh/book/installation.html). Nu is available via many package managers:
-
-[![Packaging status](https://repology.org/badge/vertical-allrepos/nushell.svg?columns=3)](https://repology.org/project/nushell/versions)
-
-For details about which platforms the Nushell team actively supports, see [our platform support policy](devdocs/PLATFORM_SUPPORT.md).
 
 ## Configuration
 
-The default configurations can be found at [sample_config](crates/nu-utils/src/default_files)
-which are the configuration files one gets when they startup Nushell for the first time.
+This fork may include custom startup helpers and personal defaults in the shipped config files under:
 
-It sets all of the default configuration to run Nushell.  From here one can
-then customize this file for their specific needs.
+```text
+crates/nu-utils/src/default_files/
+```
 
-To see where *config.nu* is located on your system simply type this command.
+That is where I keep shell-level helpers that should be available by default when this fork starts.
 
-```rust
+To inspect the active config path in Nushell, run:
+
+```nu
 $nu.config-path
 ```
 
-Please see our [book](https://www.nushell.sh) for all of the Nushell documentation.
+## Examples of local additions
 
+A typical example is a helper like `yt`, which opens a YouTube search in the system browser:
+
+```nu
+def yt [...query: string] {
+    let search_text = ($query | str join " ")
+    if ($search_text | is-empty) { return }
+
+    let url_data = {
+        scheme: "https"
+        host: "youtube.com"
+        path: "/results"
+        params: { search_query: $search_text }
+    }
+
+    start ($url_data | url join)
+}
+```
+
+Small commands like this are meant to reduce friction in my everyday shell usage.
 
 ## Philosophy
 
-Nu draws inspiration from projects like PowerShell, functional programming languages, and modern CLI tools.
-Rather than thinking of files and data as raw streams of text, Nu looks at each input as something with structure.
-For example, when you list the contents of a directory what you get back is a table of rows, where each row represents an item in that directory.
-These values can be piped through a series of steps, in a series of commands called a 'pipeline'.
+Nushell treats data as structured rather than as plain text whenever possible. That is the main reason I like it: it makes shell workflows more predictable, composable, and readable.
 
-### Pipelines
+I keep that philosophy in this fork, while tailoring the environment around how I actually use the shell.
 
-In Unix, it's common to pipe between commands to split up a sophisticated command over multiple steps.
-Nu takes this a step further and builds heavily on the idea of _pipelines_.
-As in the Unix philosophy, Nu allows commands to output to stdout and read from stdin.
-Additionally, commands can output structured data (you can think of this as a third kind of stream).
-Commands that work in the pipeline fit into one of three categories:
+## Upstream sync
 
--   Commands that produce a stream (e.g., `ls`)
--   Commands that filter a stream (e.g., `where type == "dir"`)
--   Commands that consume the output of the pipeline (e.g., `table`)
+I plan to keep pulling changes from upstream Nushell regularly.
 
-Commands are separated by the pipe symbol (`|`) to denote a pipeline flowing left to right.
+The long-term idea is:
 
-```shell
-ls | where type == "dir" | table
-# => ╭────┬──────────┬──────┬─────────┬───────────────╮
-# => │ #  │   name   │ type │  size   │   modified    │
-# => ├────┼──────────┼──────┼─────────┼───────────────┤
-# => │  0 │ .cargo   │ dir  │     0 B │ 9 minutes ago │
-# => │  1 │ assets   │ dir  │     0 B │ 2 weeks ago   │
-# => │  2 │ crates   │ dir  │ 4.0 KiB │ 2 weeks ago   │
-# => │  3 │ docker   │ dir  │     0 B │ 2 weeks ago   │
-# => │  4 │ docs     │ dir  │     0 B │ 2 weeks ago   │
-# => │  5 │ images   │ dir  │     0 B │ 2 weeks ago   │
-# => │  6 │ pkg_mgrs │ dir  │     0 B │ 2 weeks ago   │
-# => │  7 │ samples  │ dir  │     0 B │ 2 weeks ago   │
-# => │  8 │ src      │ dir  │ 4.0 KiB │ 2 weeks ago   │
-# => │  9 │ target   │ dir  │     0 B │ a day ago     │
-# => │ 10 │ tests    │ dir  │ 4.0 KiB │ 2 weeks ago   │
-# => │ 11 │ wix      │ dir  │     0 B │ 2 weeks ago   │
-# => ╰────┴──────────┴──────┴─────────┴───────────────╯
-```
-
-Because most of the time you'll want to see the output of a pipeline, `table` is assumed.
-We could have also written the above:
-
-```shell
-ls | where type == "dir"
-```
-
-Being able to use the same commands and compose them differently is an important philosophy in Nu.
-For example, we could use the built-in `ps` command to get a list of the running processes, using the same `where` as above.
-
-```shell
-ps | where cpu > 0
-# => ╭───┬───────┬───────────┬───────┬───────────┬───────────╮
-# => │ # │  pid  │   name    │  cpu  │    mem    │  virtual  │
-# => ├───┼───────┼───────────┼───────┼───────────┼───────────┤
-# => │ 0 │  2240 │ Slack.exe │ 16.40 │ 178.3 MiB │ 232.6 MiB │
-# => │ 1 │ 16948 │ Slack.exe │ 16.32 │ 205.0 MiB │ 197.9 MiB │
-# => │ 2 │ 17700 │ nu.exe    │  3.77 │  26.1 MiB │   8.8 MiB │
-# => ╰───┴───────┴───────────┴───────┴───────────┴───────────╯
-```
-
-### Opening files
-
-Nu can load file and URL contents as raw text or structured data (if it recognizes the format).
-For example, you can load a .toml file as structured data and explore it:
-
-```shell
-open Cargo.toml
-# => ╭──────────────────┬────────────────────╮
-# => │ bin              │ [table 1 row]      │
-# => │ dependencies     │ {record 25 fields} │
-# => │ dev-dependencies │ {record 8 fields}  │
-# => │ features         │ {record 10 fields} │
-# => │ package          │ {record 13 fields} │
-# => │ patch            │ {record 1 field}   │
-# => │ profile          │ {record 3 fields}  │
-# => │ target           │ {record 3 fields}  │
-# => │ workspace        │ {record 1 field}   │
-# => ╰──────────────────┴────────────────────╯
-```
-
-We can pipe this into a command that gets the contents of one of the columns:
-
-```shell
-open Cargo.toml | get package
-# => ╭───────────────┬────────────────────────────────────╮
-# => │ authors       │ [list 1 item]                      │
-# => │ default-run   │ nu                                 │
-# => │ description   │ A new type of shell                │
-# => │ documentation │ https://www.nushell.sh/book/       │
-# => │ edition       │ 2018                               │
-# => │ exclude       │ [list 1 item]                      │
-# => │ homepage      │ https://www.nushell.sh             │
-# => │ license       │ MIT                                │
-# => │ metadata      │ {record 1 field}                   │
-# => │ name          │ nu                                 │
-# => │ repository    │ https://github.com/nushell/nushell │
-# => │ rust-version  │ 1.60                               │
-# => │ version       │ 0.72.0                             │
-# => ╰───────────────┴────────────────────────────────────╯
-```
-
-And if needed we can drill down further:
-
-```shell
-open Cargo.toml | get package.version
-# => 0.72.0
-```
-
-### Plugins
-
-Nu supports plugins that offer additional functionality to the shell and follow the same structured data model that built-in commands use. There are a few examples in the `crates/nu_plugins_*` directories.
-
-Plugins are binaries that are available in your path and follow a `nu_plugin_*` naming convention.
-These binaries interact with nu via a simple JSON-RPC protocol where the command identifies itself and passes along its configuration, making it available for use.
-If the plugin is a filter, data streams to it one element at a time, and it can stream data back in return via stdin/stdout.
-If the plugin is a sink, it is given the full vector of final data and is given free reign over stdin/stdout to use as it pleases.
-
-The [awesome-nu repo](https://github.com/nushell/awesome-nu#plugins) lists a variety of nu-plugins while the [showcase repo](https://github.com/nushell/showcase) *shows* off informative blog posts that have been written about Nushell along with videos that highlight technical
-topics that have been presented.
-
-## Goals
-
-Nu adheres closely to a set of goals that make up its design philosophy. As features are added, they are checked against these goals.
-
--   First and foremost, Nu is cross-platform. Commands and techniques should work across platforms and Nu has [first-class support for Windows, macOS, and Linux](devdocs/PLATFORM_SUPPORT.md).
-
--   Nu ensures compatibility with existing platform-specific executables.
-
--   Nu's workflow and tools should have the usability expected of modern software in 2022 (and beyond).
-
--   Nu views data as either structured or unstructured. It is a structured shell like PowerShell.
-
--   Finally, Nu views data functionally. Rather than using mutation, pipelines act as a means to load, change, and save data without mutable state.
-
-## Officially Supported By
-
-Please submit an issue or PR to be added to this list.
-
--   [zoxide](https://github.com/ajeetdsouza/zoxide)
--   [starship](https://github.com/starship/starship)
--   [oh-my-posh](https://ohmyposh.dev)
--   [Couchbase Shell](https://couchbase.sh)
--   [virtualenv](https://github.com/pypa/virtualenv)
--   [atuin](https://github.com/ellie/atuin)
--   [clap](https://github.com/clap-rs/clap/tree/master/clap_complete_nushell)
--   [Dorothy](http://github.com/bevry/dorothy)
--   [Direnv](https://github.com/direnv/direnv/blob/master/docs/hook.md#nushell)
--   [x-cmd](https://x-cmd.com/mod/nu)
--   [vfox](https://github.com/version-fox/vfox)
--   [Windmill](https://www.windmill.dev/docs/getting_started/scripts_quickstart/bash)
+* keep this fork usable as a personal shell environment
+* avoid drifting too far from upstream
+* make local changes small and easy to audit
+* upstream anything that is broadly useful
 
 ## Contributing
 
-See [Contributing](CONTRIBUTING.md) for details. Thanks to all the people who already contributed!
+This fork is primarily for personal use, but upstream-quality fixes and improvements are still welcome in the form of local experiments and later PRs.
 
-<a href="https://github.com/nushell/nushell/graphs/contributors">
-  <img src="https://contributors-img.web.app/image?repo=nushell/nushell&max=750&columns=20" />
-</a>
+For the upstream contribution guide, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-The project is made available under the MIT license. See the `LICENSE` file for more information.
+This project remains under the MIT license. See [LICENSE](LICENSE) for details.
