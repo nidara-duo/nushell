@@ -71,3 +71,22 @@ $env.config.color_config = {
         attr: b
     }
 }
+
+# Search for a query on YouTube using the default system handler.
+def yt [
+    ...query: string # The search query words
+] {
+    let search_text = ($query | str join " ")
+    if ($search_text | is-empty) { return }
+
+    let url_data = {
+        scheme: "https",
+        host: "youtube.com",
+        path: "/results",
+        params: { search_query: $search_text }
+    }
+
+    let final_url = ($url_data | url join)
+
+    start $final_url
+}
