@@ -7,6 +7,7 @@ use nu_protocol::{
     report_shell_error,
 };
 use reedline::Prompt;
+use std::sync::Arc;
 
 // Name of environment variable where the prompt could be stored
 pub(crate) const PROMPT_COMMAND: &str = "PROMPT_COMMAND";
@@ -138,9 +139,24 @@ pub(crate) fn make_transient_prompt(
         nu_prompt.update_prompt_left(Some(s))
     }
 
-    if let Some(s) = get_prompt_string(TRANSIENT_PROMPT_COMMAND_RIGHT, config, engine_state, stack)
+    // Lazy evaluation: capture EngineState, Stack, and Config by clone.
+    // The closure is called by reedline at the exact moment the user presses Enter,
+    // so `date now` inside the Nu closure will return the correct timestamp.
     {
-        nu_prompt.update_prompt_right(Some(s), config.render_right_prompt_on_last_line)
+        let engine_state_clone = engine_state.clone();
+        let stack_clone = stack.clone();
+        let config_clone = config.clone();
+        let lazy_fn: Arc<dyn Fn() -> String + Send + Sync> = Arc::new(move || {
+            let mut stack_inner = stack_clone.clone();
+            get_prompt_string(
+                TRANSIENT_PROMPT_COMMAND_RIGHT,
+                &config_clone,
+                &engine_state_clone,
+                &mut stack_inner,
+            )
+            .unwrap_or_default()
+        });
+        nu_prompt.set_right_prompt_fn(lazy_fn);
     }
 
     if let Some(s) = get_prompt_string(TRANSIENT_PROMPT_INDICATOR, config, engine_state, stack) {
