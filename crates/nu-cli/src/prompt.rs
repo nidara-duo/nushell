@@ -1,11 +1,11 @@
-#[cfg(windows)]
-use std::sync::Arc;
 use nu_utils::enable_vt_processing;
 use reedline::{
     DefaultPrompt, Prompt, PromptEditMode, PromptHistorySearch, PromptHistorySearchStatus,
     PromptViMode,
 };
 use std::borrow::Cow;
+#[cfg(windows)]
+use std::sync::Arc;
 
 /// Nushell prompt definition
 #[derive(Default, Clone)]
@@ -47,10 +47,7 @@ impl NushellPrompt {
         self.render_right_prompt_on_last_line = render_right_prompt_on_last_line;
     }
 
-    pub fn set_right_prompt_fn(
-        &mut self,
-        f: Arc<dyn Fn() -> String + Send + Sync>,
-    ) {
+    pub fn set_right_prompt_fn(&mut self, f: Arc<dyn Fn() -> String + Send + Sync>) {
         self.right_prompt_fn = Some(f);
     }
 
@@ -178,7 +175,10 @@ impl Prompt for NushellPrompt {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
+    use std::sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    };
 
     #[test]
     fn default_prompt_does_not_embed_osc_markers() {
@@ -197,8 +197,7 @@ mod tests {
         prompt.update_prompt_right(Some("static-value".to_string()), false);
 
         // Set a lazy closure that returns a different value.
-        let lazy_fn: Arc<dyn Fn() -> String + Send + Sync> =
-            Arc::new(|| "lazy-value".to_string());
+        let lazy_fn: Arc<dyn Fn() -> String + Send + Sync> = Arc::new(|| "lazy-value".to_string());
         prompt.set_right_prompt_fn(lazy_fn);
 
         // The closure must win over the static string.
@@ -255,8 +254,7 @@ mod tests {
         let mut prompt = NushellPrompt::new();
 
         // Set a lazy closure first.
-        let lazy_fn: Arc<dyn Fn() -> String + Send + Sync> =
-            Arc::new(|| "lazy-stale".to_string());
+        let lazy_fn: Arc<dyn Fn() -> String + Send + Sync> = Arc::new(|| "lazy-stale".to_string());
         prompt.set_right_prompt_fn(lazy_fn);
 
         // Confirm the closure is active.
